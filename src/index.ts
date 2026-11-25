@@ -1,0 +1,16 @@
+/** 库入口：给脚本化调用留的出口，CLI 用的是同一套函数。 */
+
+export { loadConfig, defaultConfig, configPath, maskSecret } from './config.ts'
+export type { Config, ChatConfig, ImageConfig, VideoConfig, EndpointConfig } from './config.ts'
+export { Logger } from './log.ts'
+export type { LogEntry, LogLevel } from './log.ts'
+export { runPipeline, listRuns, loadRun } from './pipeline/run.ts'
+export type { RunOptions } from './pipeline/run.ts'
+export type * from './pipeline/types.ts'
+export { analyzeSource } from './pipeline/analyze.ts'
+export { writeVariants, chunkShots, planTimeline } from './pipeline/script.ts'
+export { composeFinal } from './pipeline/compose.ts'
+export { generateClips, generateKeyframes } from './pipeline/generate.ts'
+export { resolveSource } from './pipeline/source.ts'
+export { buildAss, formatAssTime, wrapText } from './media/ass.ts'
+export type { SubtitleCue } from './media/ass.ts'

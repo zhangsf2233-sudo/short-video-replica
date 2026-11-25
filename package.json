@@ -1,0 +1,44 @@
+{
+  "name": "vflow",
+  "version": "0.1.0",
+  "description": "短视频复刻流水线：源片解析 → 逐镜拆解 → 脚本仿写 → 参考首帧 → 分镜视频 → ffmpeg 合成",
+  "type": "module",
+  "bin": {
+    "vflow": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build --silent && node --test test/unit.test.mjs test/e2e.test.mjs",
+    "dev": "node --experimental-strip-types src/cli.ts",
+    "doctor": "npm run build --silent && node dist/cli.js doctor",
+    "demo": "npm run build --silent && node scripts/demo-mock.mjs"
+  },
+  "keywords": [
+    "video",
+    "pipeline",
+    "ffmpeg",
+    "shot-analysis",
+    "seedance",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "~5.7.2"
+  }
+}
