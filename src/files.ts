@@ -8,10 +8,10 @@ export async function ensureDir(dir: string): Promise<string> {
   return dir
 }
 
-/** 先写临时文件再改名，避免中断留下半个 JSON。 */
+/** 先写临时文件再改名，避免中断留下半个 JSON；临时名带随机后缀，并发写不会互相踩。 */
 export async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
   await ensureDir(dirname(path))
-  const temp = `${path}.tmp`
+  const temp = `${path}.${process.pid}.${Math.random().toString(36).slice(2, 8)}.tmp`
   await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   await rename(temp, path)
 }

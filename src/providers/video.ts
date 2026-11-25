@@ -20,7 +20,7 @@ export interface VideoRequest {
 interface CreateTaskResponse {
   id?: string
   task_id?: string
-  data?: { id?: string }
+  data?: { id?: string, task_id?: string }
   error?: { message?: string }
 }
 
@@ -35,7 +35,7 @@ interface TaskStatusResponse {
 }
 
 const SUCCESS = new Set(['succeeded', 'succeed', 'success', 'completed', 'done'])
-const FAILED = new Set(['failed', 'failure', 'error', 'cancelled', 'canceled'])
+const FAILED = new Set(['failed', 'failure', 'error', 'cancelled', 'canceled', 'expired', 'timeout'])
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -61,7 +61,8 @@ export async function generateVideo(
     url: `${base}/contents/generations/tasks`,
     apiKey: config.apiKey,
     timeoutMs: 120_000,
-    retries: 2,
+    // 同上：任务创建不幂等，禁止自动重试，宁可失败让人工决定
+    retries: 0,
     body: {
       model: config.model,
       content,
@@ -71,7 +72,7 @@ export async function generateVideo(
     },
   })
 
-  const taskId = created.id ?? created.task_id ?? created.data?.id
+  const taskId = created.id ?? created.task_id ?? created.data?.id ?? created.data?.task_id
   if (typeof taskId !== 'string' || taskId === '') {
     throw new Error(`视频任务创建失败：${created.error?.message ?? JSON.stringify(created).slice(0, 300)}`)
   }
@@ -87,7 +88,8 @@ export async function generateVideo(
       timeoutMs: 60_000,
       retries: 3,
     })
-    const status = (task.status ?? task.state ?? task.data?.status ?? '').toLowerCase()
+    // 兜底 String()：网关偶尔把 status 返回成数字或 null
+    const status = String(task.status ?? task.state ?? task.data?.status ?? '').toLowerCase()
     if (SUCCESS.has(status)) {
       const url = task.content?.video_url ?? task.data?.content?.video_url ?? task.video_url ?? task.data?.video_url
       if (typeof url !== 'string' || url === '') throw new Error('任务成功但没有返回 video_url')

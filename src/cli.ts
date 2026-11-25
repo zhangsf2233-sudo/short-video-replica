@@ -13,7 +13,7 @@ import { configPath, loadConfig, maskSecret } from './config.ts'
 import { newRunId } from './files.ts'
 import { Logger } from './log.ts'
 import { toolAvailable } from './media/ffmpeg.ts'
-import { listRuns, runPipeline } from './pipeline/run.ts'
+import { listRuns, loadRun, runPipeline } from './pipeline/run.ts'
 import type { RunInput } from './pipeline/types.ts'
 
 const HELP = `svr — 短视频复刻流水线
@@ -91,14 +91,18 @@ async function commandDoctor(): Promise<number> {
   const width = Math.max(...rows.map(([key]) => key.length))
   for (const [key, value] of rows) process.stdout.write(`${key.padEnd(width)}  ${value}\n`)
 
-  const ffmpegOk = toolAvailable(config.ffmpegPath)
-  if (!ffmpegOk) {
+  if (!toolAvailable(config.ffmpegPath)) {
     process.stderr.write('\n✗ ffmpeg 不可用，先安装：brew install ffmpeg\n')
     return 1
   }
-  const models = [config.chat.model, config.image.model, config.video.model].filter(item => item === '')
-  if (models.length > 0) {
-    process.stderr.write('\n! 还有模型没配置：设置环境变量 SVR_CHAT_MODEL / SVR_IMAGE_MODEL / SVR_VIDEO_MODEL，或写进配置文件\n')
+  if (!toolAvailable(config.ffprobePath)) {
+    process.stderr.write('\n✗ ffprobe 不可用（合成阶段测时长要用）\n')
+    return 1
+  }
+  const missing = (['chat', 'image', 'video'] as const).filter(name => config[name].model === '')
+  if (missing.length > 0) {
+    process.stderr.write(`\n✗ 还有模型没配置：${missing.map(name => `SVR_${name.toUpperCase()}_MODEL`).join(' / ')}\n  设置环境变量或写进配置文件后再跑，否则会在付费步骤前失败\n`)
+    return 1
   }
   return 0
 }
@@ -136,13 +140,6 @@ async function commandRuns(flags: Flags): Promise<number> {
 }
 
 async function commandRun(flags: Flags): Promise<number> {
-  const source = text(flags, 'source')
-  if (source === undefined) {
-    process.stderr.write('✗ 缺少 --source（本地文件 / 直链 / 分享链接）\n\n')
-    process.stdout.write(HELP)
-    return 1
-  }
-
   const explicitRunId = text(flags, 'run-id')
   const resume = flag(flags, 'resume')
   if (resume && explicitRunId === undefined) {
@@ -151,6 +148,25 @@ async function commandRun(flags: Flags): Promise<number> {
   }
   // 先定 runId：失败时才能把真实目录报给用户，而不是 <最新>
   const runId = explicitRunId ?? newRunId()
+  const config = loadConfig()
+
+  // resume 时允许省略 --source，沿用上次的源片
+  let source = text(flags, 'source')
+  if (source === undefined) {
+    if (resume && explicitRunId !== undefined) {
+      const previous = await loadRun(config, explicitRunId).catch(() => undefined)
+      if (previous === undefined) {
+        process.stderr.write(`✗ 找不到运行记录 ${explicitRunId}，无法沿用源片\n`)
+        return 1
+      }
+      source = previous.input.source
+      process.stderr.write(`沿用上次源片：${source}\n`)
+    } else {
+      process.stderr.write('✗ 缺少 --source（本地文件 / 直链 / 分享链接）\n\n')
+      process.stdout.write(HELP)
+      return 1
+    }
+  }
 
   const variantFlag = text(flags, 'variant')?.toUpperCase()
   const variant = variantFlag === 'A' || variantFlag === 'B' || variantFlag === 'C' ? variantFlag : undefined
@@ -178,7 +194,6 @@ async function commandRun(flags: Flags): Promise<number> {
     return 1
   }
 
-  const config = loadConfig()
   const logger = new Logger()
   const json = flag(flags, 'json')
   if (!json) {

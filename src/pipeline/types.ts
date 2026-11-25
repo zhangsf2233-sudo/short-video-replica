@@ -112,10 +112,18 @@ export interface RunState {
   clips: Record<string, string>
   finalVideo?: string
   steps: StepState[]
-  /** 复用判据：输入变了就不能用上次的产物。 */
-  keys?: { analysis: string, script: string, render: string }
+  /** 复用判据：每步一把指纹，只在该步成功后写入；缺项表示该步还没成功过。 */
+  keys?: RunKeys
   logs: LogEntry[]
   error?: string
+}
+
+export interface RunKeys {
+  analysis?: string
+  script?: string
+  keyframes?: string
+  clips?: string
+  compose?: string
 }
 
 export function initialSteps(): StepState[] {

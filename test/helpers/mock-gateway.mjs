@@ -36,6 +36,7 @@ export async function startMockGateway(options) {
   const clip = readFileSync(options.clipPath)
   const image = readFileSync(options.imagePath)
   const calls = { chat: 0, image: 0, videoCreate: 0, videoPoll: 0 }
+  let failVideoRemaining = options.failVideoCreates ?? 0
   let taskSeq = 0
   let baseUrl = ''
 
@@ -63,6 +64,10 @@ export async function startMockGateway(options) {
 
       if (request.method === 'POST' && request.url === '/contents/generations/tasks') {
         calls.videoCreate += 1
+        if (failVideoRemaining > 0) {
+          failVideoRemaining -= 1
+          return json(500, { error: { message: 'mock 注入：创建任务失败' } })
+        }
         taskSeq += 1
         return json(200, { id: `task-${taskSeq}` })
       }

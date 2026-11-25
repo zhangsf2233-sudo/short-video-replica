@@ -36,7 +36,8 @@ export async function generateImage(config: ImageConfig, request: ImageRequest, 
     apiKey: config.apiKey,
     body,
     timeoutMs: config.timeoutMs,
-    retries: 2,
+    // 创建类请求不重试：服务端可能已经受理并计费，重发等于付两次钱
+    retries: 0,
   })
 
   const first = payload.data?.[0]

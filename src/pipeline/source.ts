@@ -1,7 +1,7 @@
 /** 第 1 步：把「本地文件 / 直链 / 分享链接」统一成一条可分析的本地视频。 */
 
 import { existsSync } from 'node:fs'
-import { basename, extname, join } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
 import { download } from '../http.ts'
 import { ensureDir } from '../files.ts'
 import { probeMedia, run, type ToolPaths, type MediaInfo } from '../media/ffmpeg.ts'
@@ -70,7 +70,9 @@ export async function resolveSource(options: SourceOptions): Promise<SourceInfo>
     return await fetchWithYtDlp(options)
   }
 
-  if (!existsSync(input)) throw new Error(`找不到文件：${input}`)
-  options.log(`使用本地视频 ${basename(input)}`)
-  return infoToSource('file', input, input, probeMedia(input, options.tools))
+  // 存绝对路径：换了工作目录再 --resume 也能找到源片
+  const absolute = resolve(input)
+  if (!existsSync(absolute)) throw new Error(`找不到文件：${absolute}`)
+  options.log(`使用本地视频 ${basename(absolute)}`)
+  return infoToSource('file', absolute, absolute, probeMedia(absolute, options.tools))
 }
