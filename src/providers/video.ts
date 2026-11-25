@@ -45,7 +45,7 @@ export async function generateVideo(
   destPath: string,
   log?: (message: string) => void,
 ): Promise<void> {
-  if (config.model.trim() === '') throw new Error('没有配置视频模型（VFLOW_VIDEO_MODEL 或配置文件 video.model）')
+  if (config.model.trim() === '') throw new Error('没有配置视频模型（SVR_VIDEO_MODEL 或配置文件 video.model）')
   const base = config.baseUrl.replace(/\/+$/, '')
 
   const content: Array<Record<string, unknown>> = [{ type: 'text', text: request.prompt }]

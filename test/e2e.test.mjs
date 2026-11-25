@@ -15,7 +15,7 @@ function durationOf(path) {
 }
 
 test('端到端：源片 → 拆解 → 脚本 → 首帧 → 分镜 → final.mp4', { skip: ffmpegAvailable() ? false : 'ffmpeg 不可用' }, async t => {
-  const root = mkdtempSync(join(tmpdir(), 'vflow-e2e-'))
+  const root = mkdtempSync(join(tmpdir(), 'svr-e2e-'))
   const fixtures = makeFixtures(join(root, 'fixtures'))
   const gateway = await startMockGateway({ clipPath: fixtures.clip, imagePath: fixtures.image })
 
@@ -27,17 +27,17 @@ test('端到端：源片 → 拆解 → 脚本 → 首帧 → 分镜 → final.m
     subtitle: { enabled: true, fontName: 'Helvetica', fontSize: 14, marginV: 40 },
   }), 'utf8')
 
-  process.env.VFLOW_CONFIG = configPath
-  process.env.VFLOW_DATA_DIR = join(root, 'runs')
-  process.env.VFLOW_CHAT_BASE = gateway.baseUrl
-  process.env.VFLOW_CHAT_KEY = 'test-key'
-  process.env.VFLOW_CHAT_MODEL = 'mock-chat'
-  process.env.VFLOW_IMAGE_BASE = gateway.baseUrl
-  process.env.VFLOW_IMAGE_KEY = 'test-key'
-  process.env.VFLOW_IMAGE_MODEL = 'mock-image'
-  process.env.VFLOW_VIDEO_BASE = gateway.baseUrl
-  process.env.VFLOW_VIDEO_KEY = 'test-key'
-  process.env.VFLOW_VIDEO_MODEL = 'mock-video'
+  process.env.SVR_CONFIG = configPath
+  process.env.SVR_DATA_DIR = join(root, 'runs')
+  process.env.SVR_CHAT_BASE = gateway.baseUrl
+  process.env.SVR_CHAT_KEY = 'test-key'
+  process.env.SVR_CHAT_MODEL = 'mock-chat'
+  process.env.SVR_IMAGE_BASE = gateway.baseUrl
+  process.env.SVR_IMAGE_KEY = 'test-key'
+  process.env.SVR_IMAGE_MODEL = 'mock-image'
+  process.env.SVR_VIDEO_BASE = gateway.baseUrl
+  process.env.SVR_VIDEO_KEY = 'test-key'
+  process.env.SVR_VIDEO_MODEL = 'mock-video'
 
   t.after(async () => { await gateway.close() })
 

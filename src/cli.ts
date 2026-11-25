@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * vflow 命令行入口。
+ * svr 命令行入口。
  *
  * 只做三件事：解析参数、组织一次运行、把结果和失败原因说清楚。
  * 真正的编排在 pipeline/run.ts。
@@ -14,13 +14,13 @@ import { toolAvailable } from './media/ffmpeg.ts'
 import { listRuns, runPipeline } from './pipeline/run.ts'
 import type { RunInput } from './pipeline/types.ts'
 
-const HELP = `vflow — 短视频复刻流水线
+const HELP = `svr — 短视频复刻流水线
 
 用法：
-  vflow run --source <文件|直链|分享链接> [选项]
-  vflow doctor          检查 ffmpeg / 配置是否就绪
-  vflow config          打印当前配置（密钥打码）
-  vflow runs [--json]   列出历史运行
+  svr run --source <文件|直链|分享链接> [选项]
+  svr doctor          检查 ffmpeg / 配置是否就绪
+  svr config          打印当前配置（密钥打码）
+  svr runs [--json]   列出历史运行
 
 run 选项：
   --source <s>             必填。本地视频、mp4 直链，或抖音/小红书等分享链接（需 yt-dlp）
@@ -84,7 +84,7 @@ async function commandDoctor(): Promise<number> {
   }
   const models = [config.chat.model, config.image.model, config.video.model].filter(item => item === '')
   if (models.length > 0) {
-    process.stderr.write('\n! 还有模型没配置：设置环境变量 VFLOW_CHAT_MODEL / VFLOW_IMAGE_MODEL / VFLOW_VIDEO_MODEL，或写进配置文件\n')
+    process.stderr.write('\n! 还有模型没配置：设置环境变量 SVR_CHAT_MODEL / SVR_IMAGE_MODEL / SVR_VIDEO_MODEL，或写进配置文件\n')
   }
   return 0
 }
@@ -216,7 +216,7 @@ async function main(argv: string[]): Promise<number> {
       return command === undefined ? 1 : 0
     case '--version':
     case '-v':
-      process.stdout.write('vflow 0.1.0\n')
+      process.stdout.write('svr 0.1.0\n')
       return 0
     default:
       process.stderr.write(`✗ 未知命令：${command}\n\n`)

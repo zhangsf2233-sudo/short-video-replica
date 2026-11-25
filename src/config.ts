@@ -1,7 +1,7 @@
 /**
  * 配置：默认值 ← 配置文件 ← 环境变量，后者覆盖前者。
  *
- * 配置文件位置：$VFLOW_CONFIG 或 ~/.vflow/config.json
+ * 配置文件位置：$SVR_CONFIG 或 ~/.svr/config.json
  * 密钥推荐走环境变量，不要写进仓库。
  */
 
@@ -58,16 +58,16 @@ export interface Config {
   }
 }
 
-export const CONFIG_PATH_DEFAULT = join(homedir(), '.vflow', 'config.json')
+export const CONFIG_PATH_DEFAULT = join(homedir(), '.svr', 'config.json')
 
 export function configPath(): string {
-  const override = (process.env.VFLOW_CONFIG ?? '').trim()
+  const override = (process.env.SVR_CONFIG ?? '').trim()
   return override === '' ? CONFIG_PATH_DEFAULT : override
 }
 
 export function defaultConfig(): Config {
   return {
-    dataDir: join(homedir(), '.vflow', 'runs'),
+    dataDir: join(homedir(), '.svr', 'runs'),
     ffmpegPath: 'ffmpeg',
     ffprobePath: 'ffprobe',
     ytDlpPath: 'yt-dlp',
@@ -137,21 +137,21 @@ export function loadConfig(): Config {
 
   const chat: ChatConfig = {
     ...merged.chat,
-    baseUrl: env('VFLOW_CHAT_BASE') ?? merged.chat.baseUrl,
-    apiKey: env('VFLOW_CHAT_KEY') ?? merged.chat.apiKey,
-    model: env('VFLOW_CHAT_MODEL') ?? merged.chat.model,
+    baseUrl: env('SVR_CHAT_BASE') ?? merged.chat.baseUrl,
+    apiKey: env('SVR_CHAT_KEY') ?? merged.chat.apiKey,
+    model: env('SVR_CHAT_MODEL') ?? merged.chat.model,
   }
   const image: ImageConfig = {
     ...merged.image,
-    baseUrl: env('VFLOW_IMAGE_BASE') ?? merged.image.baseUrl,
-    apiKey: env('VFLOW_IMAGE_KEY') ?? merged.image.apiKey,
-    model: env('VFLOW_IMAGE_MODEL') ?? merged.image.model,
+    baseUrl: env('SVR_IMAGE_BASE') ?? merged.image.baseUrl,
+    apiKey: env('SVR_IMAGE_KEY') ?? merged.image.apiKey,
+    model: env('SVR_IMAGE_MODEL') ?? merged.image.model,
   }
   const video: VideoConfig = {
     ...merged.video,
-    baseUrl: env('VFLOW_VIDEO_BASE') ?? merged.video.baseUrl,
-    apiKey: env('VFLOW_VIDEO_KEY') ?? merged.video.apiKey,
-    model: env('VFLOW_VIDEO_MODEL') ?? merged.video.model,
+    baseUrl: env('SVR_VIDEO_BASE') ?? merged.video.baseUrl,
+    apiKey: env('SVR_VIDEO_KEY') ?? merged.video.apiKey,
+    model: env('SVR_VIDEO_MODEL') ?? merged.video.model,
   }
 
   return {
@@ -159,10 +159,10 @@ export function loadConfig(): Config {
     chat,
     image,
     video,
-    dataDir: env('VFLOW_DATA_DIR') ?? merged.dataDir,
-    ffmpegPath: env('VFLOW_FFMPEG') ?? merged.ffmpegPath,
-    ffprobePath: env('VFLOW_FFPROBE') ?? merged.ffprobePath,
-    ytDlpPath: env('VFLOW_YTDLP') ?? merged.ytDlpPath,
+    dataDir: env('SVR_DATA_DIR') ?? merged.dataDir,
+    ffmpegPath: env('SVR_FFMPEG') ?? merged.ffmpegPath,
+    ffprobePath: env('SVR_FFPROBE') ?? merged.ffprobePath,
+    ytDlpPath: env('SVR_YTDLP') ?? merged.ytDlpPath,
   }
 }
 

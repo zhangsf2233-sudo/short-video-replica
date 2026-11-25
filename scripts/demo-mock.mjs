@@ -38,17 +38,17 @@ writeFileSync(configPath, JSON.stringify({
 }, null, 2))
 
 Object.assign(process.env, {
-  VFLOW_CONFIG: configPath,
-  VFLOW_DATA_DIR: join(output, 'runs'),
-  VFLOW_CHAT_BASE: gateway.baseUrl,
-  VFLOW_CHAT_KEY: 'mock',
-  VFLOW_CHAT_MODEL: 'mock-vision',
-  VFLOW_IMAGE_BASE: gateway.baseUrl,
-  VFLOW_IMAGE_KEY: 'mock',
-  VFLOW_IMAGE_MODEL: 'mock-image',
-  VFLOW_VIDEO_BASE: gateway.baseUrl,
-  VFLOW_VIDEO_KEY: 'mock',
-  VFLOW_VIDEO_MODEL: 'mock-video',
+  SVR_CONFIG: configPath,
+  SVR_DATA_DIR: join(output, 'runs'),
+  SVR_CHAT_BASE: gateway.baseUrl,
+  SVR_CHAT_KEY: 'mock',
+  SVR_CHAT_MODEL: 'mock-vision',
+  SVR_IMAGE_BASE: gateway.baseUrl,
+  SVR_IMAGE_KEY: 'mock',
+  SVR_IMAGE_MODEL: 'mock-image',
+  SVR_VIDEO_BASE: gateway.baseUrl,
+  SVR_VIDEO_KEY: 'mock',
+  SVR_VIDEO_MODEL: 'mock-video',
 })
 
 const { loadConfig, runPipeline, Logger } = await import('../dist/index.js')

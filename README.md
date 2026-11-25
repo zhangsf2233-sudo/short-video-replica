@@ -1,10 +1,11 @@
-# vflow
+# short-video-replica
 
-**把一条爆款短视频拆开，再按你要推的产品重新拍一遍。**
+**短视频复刻器** —— 把一条爆款视频拆开，按你的产品重新拍一遍。
 
-[![CI](https://github.com/zhangsf2233-sudo/vflow/actions/workflows/ci.yml/badge.svg)](https://github.com/zhangsf2233-sudo/vflow/actions/workflows/ci.yml)
 
-给一条参考视频（本地文件 / 直链 / 抖音等分享链接）和一张产品图，vflow 会：抽帧拆解它的钩子与节奏 → 写出 3 版复刻脚本 → 生成每段的参考首帧 → 调用视频模型产出分镜 → 用 ffmpeg 拼成一条带字幕的成片。
+[![CI](https://github.com/zhangsf2233-sudo/short-video-replica/actions/workflows/ci.yml/badge.svg)](https://github.com/zhangsf2233-sudo/short-video-replica/actions/workflows/ci.yml)
+
+给一条参考视频（本地文件 / 直链 / 抖音等分享链接）和一张产品图，`svr` 会：抽帧拆解它的钩子与节奏 → 写出 3 版复刻脚本 → 生成每段的参考首帧 → 调用视频模型产出分镜 → 用 ffmpeg 拼成一条带字幕的成片。
 
 ```
 源片 ──抽帧──> 拆解(视觉模型) ──> 3 版脚本(对话模型) ──> 参考首帧(图片模型)
@@ -45,15 +46,15 @@ npm run demo
 
 ```bash
 # 1. 检查环境（ffmpeg、配置、模型）
-npx vflow doctor
+npx svr doctor
 
 # 2. 填三个模型（示例：火山方舟）
-export VFLOW_CHAT_KEY=<你的 key>      VFLOW_CHAT_MODEL=doubao-seed-2-1-lite-260915
-export VFLOW_IMAGE_KEY=<你的 key>     VFLOW_IMAGE_MODEL=doubao-seedream-5-0-flash-260915
-export VFLOW_VIDEO_KEY=<你的 key>     VFLOW_VIDEO_MODEL=doubao-seedance-2-5-flash-261115
+export SVR_CHAT_KEY=<你的 key>      SVR_CHAT_MODEL=doubao-seed-2-1-lite-260915
+export SVR_IMAGE_KEY=<你的 key>     SVR_IMAGE_MODEL=doubao-seedream-5-0-flash-260915
+export SVR_VIDEO_KEY=<你的 key>     SVR_VIDEO_MODEL=doubao-seedance-2-5-flash-261115
 
 # 3. 跑
-npx vflow run \
+npx svr run \
   --source ./reference.mp4 \
   --product-name "橙色气泡水" \
   --selling-points "九块九一罐，冰镇更爽" \
@@ -64,7 +65,7 @@ npx vflow run \
 产物：
 
 ```
-~/.vflow/runs/<runId>/
+~/.svr/runs/<runId>/
 ├── run.json        # 每一步的状态、耗时、日志（失败时先看这里）
 ├── frames/         # 拆解用的抽帧
 ├── images/         # 每段的参考首帧
@@ -76,11 +77,11 @@ npx vflow run \
 
 | 命令 | 说明 |
 | --- | --- |
-| `vflow run --source <s>` | 跑完整流水线（`--variant A\|B\|C` 选脚本版本） |
-| `vflow run --run-id <id> --resume` | 复用已完成的步骤重跑，失败重试不烧钱 |
-| `vflow doctor` | 检查 ffmpeg / 配置 / 三个模型 |
-| `vflow config` | 打印配置（密钥自动打码） |
-| `vflow runs` | 历史运行列表 |
+| `svr run --source <s>` | 跑完整流水线（`--variant A\|B\|C` 选脚本版本） |
+| `svr run --run-id <id> --resume` | 复用已完成的步骤重跑，失败重试不烧钱 |
+| `svr doctor` | 检查 ffmpeg / 配置 / 三个模型 |
+| `svr config` | 打印配置（密钥自动打码） |
+| `svr runs` | 历史运行列表 |
 
 ## 设计上的几个选择
 
@@ -127,16 +128,16 @@ src/
 
 ## 配置
 
-优先级：**默认值 ← `~/.vflow/config.json` ← 环境变量**。
+优先级：**默认值 ← `~/.svr/config.json` ← 环境变量**。
 
 | 环境变量 | 说明 |
 | --- | --- |
-| `VFLOW_CHAT_BASE` / `VFLOW_CHAT_KEY` / `VFLOW_CHAT_MODEL` | 对话与视觉模型（OpenAI 兼容 `/chat/completions`） |
-| `VFLOW_IMAGE_BASE` / `VFLOW_IMAGE_KEY` / `VFLOW_IMAGE_MODEL` | 图片模型（`/images/generations`） |
-| `VFLOW_VIDEO_BASE` / `VFLOW_VIDEO_KEY` / `VFLOW_VIDEO_MODEL` | 视频模型（Seedance 任务接口） |
-| `VFLOW_DATA_DIR` | 运行产物目录，默认 `~/.vflow/runs` |
-| `VFLOW_CONFIG` | 配置文件路径 |
-| `VFLOW_FFMPEG` / `VFLOW_FFPROBE` / `VFLOW_YTDLP` | 二进制路径 |
+| `SVR_CHAT_BASE` / `SVR_CHAT_KEY` / `SVR_CHAT_MODEL` | 对话与视觉模型（OpenAI 兼容 `/chat/completions`） |
+| `SVR_IMAGE_BASE` / `SVR_IMAGE_KEY` / `SVR_IMAGE_MODEL` | 图片模型（`/images/generations`） |
+| `SVR_VIDEO_BASE` / `SVR_VIDEO_KEY` / `SVR_VIDEO_MODEL` | 视频模型（Seedance 任务接口） |
+| `SVR_DATA_DIR` | 运行产物目录，默认 `~/.svr/runs` |
+| `SVR_CONFIG` | 配置文件路径 |
+| `SVR_FFMPEG` / `SVR_FFPROBE` / `SVR_YTDLP` | 二进制路径 |
 
 ## 测试
 

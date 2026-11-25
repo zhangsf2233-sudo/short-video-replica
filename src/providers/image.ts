@@ -18,7 +18,7 @@ interface ImageResponse {
 }
 
 export async function generateImage(config: ImageConfig, request: ImageRequest, destPath: string): Promise<void> {
-  if (config.model.trim() === '') throw new Error('没有配置图片模型（VFLOW_IMAGE_MODEL 或配置文件 image.model）')
+  if (config.model.trim() === '') throw new Error('没有配置图片模型（SVR_IMAGE_MODEL 或配置文件 image.model）')
 
   const body: Record<string, unknown> = {
     model: config.model,

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-export const FFMPEG = process.env.VFLOW_FFMPEG ?? 'ffmpeg'
+export const FFMPEG = process.env.SVR_FFMPEG ?? 'ffmpeg'
 
 export function ffmpegAvailable() {
   const result = spawnSync(FFMPEG, ['-version'], { encoding: 'utf8' })
