@@ -2,6 +2,8 @@
 
 **把一条爆款短视频拆开，再按你要推的产品重新拍一遍。**
 
+[![CI](https://github.com/zhangsf2233-sudo/vflow/actions/workflows/ci.yml/badge.svg)](https://github.com/zhangsf2233-sudo/vflow/actions/workflows/ci.yml)
+
 给一条参考视频（本地文件 / 直链 / 抖音等分享链接）和一张产品图，vflow 会：抽帧拆解它的钩子与节奏 → 写出 3 版复刻脚本 → 生成每段的参考首帧 → 调用视频模型产出分镜 → 用 ffmpeg 拼成一条带字幕的成片。
 
 ```
