@@ -24,6 +24,23 @@ npm run demo
 
 测试素材由 ffmpeg 现场生成，mock 网关模拟对话 / 图片 / 视频三类接口，行为与真实服务同构。
 
+实际输出（路径已缩略）：
+
+```text
+[analyze] · 抽 6 帧
+[analyze] · 钩子：开场直接把价格怼到镜头前｜评分 82
+[script] · 采用 A 版（忠实原结构），共 2 段
+[keyframes] · 段 1：生成参考首帧
+[clips] · 段 1：任务 task-1 已提交
+[compose] · 统一规格为 720x1280 / 30fps
+[compose] · 拼接 2 段
+[compose] · 烧录 6 条字幕
+[compose] · 完成 → output/demo/runs/<id>/final.mp4
+
+✓ 成片：output/demo/runs/<id>/final.mp4
+  时长：10.00s，段数：2
+```
+
 ## 用真模型跑
 
 ```bash
