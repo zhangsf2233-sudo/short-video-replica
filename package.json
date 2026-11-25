@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build --silent && node --test test/unit.test.mjs test/e2e.test.mjs",
+    "test": "npm run build --silent && node --test test/unit.test.mjs test/plan.test.mjs test/e2e.test.mjs",
     "dev": "node --experimental-strip-types src/cli.ts",
     "doctor": "npm run build --silent && node dist/cli.js doctor",
     "demo": "npm run build --silent && node scripts/demo-mock.mjs"
@@ -40,5 +40,13 @@
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "~5.7.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangsf2233-sudo/short-video-replica.git"
+  },
+  "homepage": "https://github.com/zhangsf2233-sudo/short-video-replica#readme",
+  "bugs": {
+    "url": "https://github.com/zhangsf2233-sudo/short-video-replica/issues"
   }
 }

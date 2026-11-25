@@ -150,7 +150,3 @@ export function buildKeyframePrompt(input: {
     '画面内不要出现任何文字、字幕、Logo 与水印。',
   ].join('\n')
 }
-
-export function narrationOf(shot: ScriptShot): string {
-  return shot.narration.trim()
-}

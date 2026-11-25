@@ -1,7 +1,6 @@
 /** 文件与路径小工具。 */
 
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
-import { existsSync, readFileSync } from 'node:fs'
 import { dirname, extname, join } from 'node:path'
 
 export async function ensureDir(dir: string): Promise<string> {
@@ -15,15 +14,6 @@ export async function writeJsonAtomic(path: string, value: unknown): Promise<voi
   const temp = `${path}.tmp`
   await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   await rename(temp, path)
-}
-
-export function readJsonIfExists<T>(path: string): T | undefined {
-  if (!existsSync(path)) return undefined
-  try {
-    return JSON.parse(readFileSync(path, 'utf8')) as T
-  } catch {
-    return undefined
-  }
 }
 
 const MIME: Record<string, string> = {
@@ -47,11 +37,6 @@ export function newRunId(now = new Date()): string {
   const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
   const noise = Math.random().toString(36).slice(2, 6)
   return `${stamp}-${noise}`
-}
-
-/** 文件名安全化（中文保留，只干掉路径分隔符和控制字符）。 */
-export function safeName(value: string): string {
-  return value.replace(/[/\\:*?"<>|\u0000-\u001f]/g, '_').slice(0, 60)
 }
 
 export function runPaths(dataDir: string, runId: string): {

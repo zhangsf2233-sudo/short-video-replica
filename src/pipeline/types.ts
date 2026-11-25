@@ -93,6 +93,8 @@ export interface RunInput {
   variant?: 'A' | 'B' | 'C'
   /** 抽帧数量覆盖。 */
   frames?: number
+  /** 只跑到脚本这一步就停，用来先审稿再花钱生成视频。 */
+  planOnly?: boolean
 }
 
 export interface RunState {
@@ -110,6 +112,8 @@ export interface RunState {
   clips: Record<string, string>
   finalVideo?: string
   steps: StepState[]
+  /** 复用判据：输入变了就不能用上次的产物。 */
+  keys?: { analysis: string, script: string, render: string }
   logs: LogEntry[]
   error?: string
 }

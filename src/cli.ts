@@ -6,9 +6,11 @@
  * 真正的编排在 pipeline/run.ts。
  */
 
-import { existsSync } from 'node:fs'
-import { basename } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { configPath, loadConfig, maskSecret } from './config.ts'
+import { newRunId } from './files.ts'
 import { Logger } from './log.ts'
 import { toolAvailable } from './media/ffmpeg.ts'
 import { listRuns, runPipeline } from './pipeline/run.ts'
@@ -32,7 +34,19 @@ run 选项：
   --frames <n>             抽帧数量
   --run-id <id>            指定运行目录名
   --resume                 复用该 run 里已完成的步骤
+  --plan                   只跑到脚本就停，先审稿再决定要不要生成（省钱）
 `
+
+
+/** 版本号直接读 package.json，避免两处各写一份。 */
+function version(): string {
+  try {
+    const file = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json')
+    return (JSON.parse(readFileSync(file, 'utf8')) as { version?: string }).version ?? '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
 
 type Flags = Record<string, string | boolean>
 
@@ -129,12 +143,14 @@ async function commandRun(flags: Flags): Promise<number> {
     return 1
   }
 
-  const runId = text(flags, 'run-id')
+  const explicitRunId = text(flags, 'run-id')
   const resume = flag(flags, 'resume')
-  if (resume && runId === undefined) {
+  if (resume && explicitRunId === undefined) {
     process.stderr.write('✗ --resume 需要配合 --run-id 使用\n')
     return 1
   }
+  // 先定 runId：失败时才能把真实目录报给用户，而不是 <最新>
+  const runId = explicitRunId ?? newRunId()
 
   const variantFlag = text(flags, 'variant')?.toUpperCase()
   const variant = variantFlag === 'A' || variantFlag === 'B' || variantFlag === 'C' ? variantFlag : undefined
@@ -154,6 +170,7 @@ async function commandRun(flags: Flags): Promise<number> {
     ...(productImage === undefined ? {} : { productImage }),
     ...(variant === undefined ? {} : { variant }),
     ...(frames === undefined || !Number.isFinite(frames) ? {} : { frames }),
+    ...(flag(flags, 'plan') ? { planOnly: true } : {}),
   }
 
   if (productImage !== undefined && !existsSync(productImage)) {
@@ -174,9 +191,30 @@ async function commandRun(flags: Flags): Promise<number> {
       input,
       config,
       logger,
-      ...(runId === undefined ? {} : { runId }),
+      runId,
       ...(resume ? { resume: true } : {}),
     })
+    if (state.input.planOnly === true) {
+      const plan = state.variants ?? []
+      const chosenVariant = plan.find(item => item.id === state.chosenVariant) ?? plan[0]
+      if (!json) {
+        process.stderr.write('\n脚本已就绪（未生成视频，未消耗视频额度）：\n')
+        for (const variant of plan) {
+          const shots = variant.segments.reduce((sum, segment) => sum + segment.shots.length, 0)
+          process.stderr.write(`  ${variant.id} 版（${variant.angle}）：${variant.segments.length} 段 / ${shots} 镜\n`)
+        }
+        if (chosenVariant !== undefined) {
+          process.stderr.write(`\n采用 ${chosenVariant.id} 版的分镜：\n`)
+          for (const segment of chosenVariant.segments) {
+            for (const shot of segment.shots) {
+              process.stderr.write(`  ${String(shot.index).padStart(2, '0')}. ${shot.narration === '' ? '（无口播）' : shot.narration}\n`)
+            }
+          }
+        }
+        process.stderr.write(`\n确认后去掉 --plan，用 --resume --run-id ${state.id} 接着生成。\n`)
+      }
+    }
+
     const summary = {
       ok: true,
       runId: state.id,
@@ -191,7 +229,7 @@ async function commandRun(flags: Flags): Promise<number> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     process.stderr.write(`\n✗ 失败：${message}\n`)
-    process.stderr.write(`  详细过程见 ${config.dataDir}/${runId ?? '<最新>'}/run.json\n`)
+    process.stderr.write(`  详细过程见 ${config.dataDir}/${runId}/run.json\n`)
     return 1
   }
 }
@@ -216,7 +254,7 @@ async function main(argv: string[]): Promise<number> {
       return command === undefined ? 1 : 0
     case '--version':
     case '-v':
-      process.stdout.write('svr 0.1.0\n')
+      process.stdout.write(`svr ${version()}\n`)
       return 0
     default:
       process.stderr.write(`✗ 未知命令：${command}\n\n`)

@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import type { Config } from '../config.ts'
 import { ensureDir } from '../files.ts'
 import { attachAudio, burnSubtitles, concatClips, normalizeClip, probeMedia } from '../media/ffmpeg.ts'
-import { buildAss, type SubtitleCue } from '../media/ass.ts'
-import { planTimeline } from './script.ts'
+import { buildAss } from '../media/ass.ts'
+import { buildCues } from './timeline.ts'
 import type { ScriptVariant, SourceInfo } from './types.ts'
 
 export interface ComposeOptions {
@@ -44,21 +44,26 @@ export async function composeFinal(options: ComposeOptions): Promise<string> {
     normalized.push(dest)
   }
 
+  // 逐段量真实时长：视频模型的产出长度常与请求不一致，字幕必须按真值排
+  const actualDurations = normalized.map((file, index) => {
+    const seconds = probeMedia(file, tools).durationSec
+    options.log(`段 ${index + 1} 实际时长 ${seconds.toFixed(2)}s`)
+    return seconds
+  })
+
   const joined = join(options.workDir, 'joined.mp4')
   options.log(`拼接 ${normalized.length} 段`)
   concatClips(normalized, joined, tools)
 
   const joinedInfo = probeMedia(joined, tools)
-  const timeline = planTimeline(variant)
   let subtitled = joined
 
   if (config.subtitle.enabled) {
-    const cues: SubtitleCue[] = timeline
-      .filter(item => item.shot.narration.trim() !== '')
-      .map(item => ({
-        text: item.shot.narration,
-        startSec: Math.min(item.startSec, joinedInfo.durationSec),
-        endSec: Math.min(item.endSec, joinedInfo.durationSec),
+    const cues = buildCues(variant, actualDurations)
+      .map(cue => ({
+        text: cue.text,
+        startSec: Math.min(cue.startSec, joinedInfo.durationSec),
+        endSec: Math.min(cue.endSec, joinedInfo.durationSec),
       }))
     if (cues.length > 0) {
       const assPath = join(options.workDir, 'subtitles.ass')

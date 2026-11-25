@@ -79,4 +79,20 @@ test('端到端：源片 → 拆解 → 脚本 → 首帧 → 分镜 → final.m
   assert.equal(resumed.finalVideo, state.finalVideo)
   assert.equal(gateway.calls.chat, before.chat, 'resume 不应重新调用对话模型')
   assert.equal(gateway.calls.image, before.image, 'resume 不应重新生成首帧')
+
+  // 换 variant：脚本三版是一起生成的，但首帧/分镜必须按新版本重跑，不能复用旧产物
+  const beforeSwitch = { ...gateway.calls }
+  const switched = await runPipeline({
+    input: { ...input, variant: 'B' },
+    config,
+    logger: new Logger(),
+    runId: state.id,
+    resume: true,
+  })
+  assert.equal(switched.chosenVariant, 'B', '--variant B 在 resume 时必须生效')
+  assert.equal(gateway.calls.chat, beforeSwitch.chat, '脚本不需要重新生成')
+  assert.ok(gateway.calls.image > beforeSwitch.image, '换版本后首帧应重新生成')
+  assert.ok(gateway.calls.videoCreate > beforeSwitch.videoCreate, '换版本后分镜视频应重新生成')
+  // mock 的 B 版是 4 个镜头 1 段 → 成片约 5 秒
+  assert.ok(Math.abs(durationOf(switched.finalVideo) - 5) < 1.5, '换版本后成片时长应跟随新分段')
 })

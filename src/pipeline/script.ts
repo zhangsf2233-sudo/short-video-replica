@@ -149,16 +149,3 @@ function buildVariant(id: 'A' | 'B' | 'C', angle: string, shots: ScriptShot[], o
   })
   return { id, angle, segments }
 }
-
-/** 把选中的一版摊平成「段 → 镜头」，供字幕和合成使用。 */
-export function planTimeline(variant: ScriptVariant): Array<{ shot: ScriptShot, startSec: number, endSec: number }> {
-  const timeline: Array<{ shot: ScriptShot, startSec: number, endSec: number }> = []
-  let cursor = 0
-  for (const segment of variant.segments) {
-    for (const shot of segment.shots) {
-      timeline.push({ shot, startSec: cursor, endSec: cursor + shot.durationSec })
-      cursor += shot.durationSec
-    }
-  }
-  return timeline
-}

@@ -91,11 +91,15 @@ export async function completeChat(config: ChatConfig, request: ChatRequest): Pr
     const text = extractMessageText(payload)
     const truncated = payload.choices?.[0]?.finish_reason === 'length'
     const reasoningOnly = text.trim() === '' && (payload.choices?.[0]?.message?.reasoning_content ?? '') !== ''
-    if (text.trim() !== '') return text
-    if ((truncated || reasoningOnly) && attempt < MAX_BUDGET_RETRY) {
+    // JSON 场景下被截断的半截 JSON 等于废输出，必须重试；纯文本场景截断还有部分价值，直接返回
+    const needsMoreBudget = reasoningOnly || (truncated && (request.json === true || text.trim() === ''))
+    if (text.trim() !== '' && !needsMoreBudget) return text
+    if (needsMoreBudget && attempt < MAX_BUDGET_RETRY) {
       budget = Math.min(budget * 3, 32_000)
       continue
     }
+    // 预算已经加过一轮还是截断：把内容交出去，让调用方在解析时报更明确的错
+    if (text.trim() !== '') return text
     throw new Error(`模型返回空内容（finish_reason=${payload.choices?.[0]?.finish_reason ?? 'unknown'}，max_tokens=${budget}）`)
   }
   throw new Error('模型没有返回可用内容')

@@ -3,6 +3,7 @@
  * 支持 --resume：已完成且产物还在的步骤直接复用，不重复烧钱。
  */
 
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -32,6 +33,21 @@ export interface RunOptions {
   runId?: string
   resume?: boolean
 }
+
+
+/** 指纹：只把影响产物的输入算进去，配置里与产物无关的字段不参与。 */
+function hashOf(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16)
+}
+
+const KEY_OF = {
+  parse: 'analysis',
+  analyze: 'analysis',
+  script: 'script',
+  keyframes: 'render',
+  clips: 'render',
+  compose: 'render',
+} as const
 
 export function defaultProduct(input: RunInput): { name: string, sellingPoints: string, audience: string } {
   const product = input.product
@@ -88,7 +104,12 @@ export async function runPipeline(options: RunOptions): Promise<RunState> {
     steps: initialSteps(),
     logs: [],
   }
+  // 注意：resume 时 state 与 existing 是同一个对象，先留一份旧指纹，
+  // 否则后面 state.keys = keys 会把比较基准一起改掉，导致永远判成「没变」。
+  const previousKeys = existing?.keys === undefined ? undefined : { ...existing.keys }
   state.input = { ...state.input, ...options.input }
+  // resume 时 --variant 可能变了：脚本是三个版本一起生成的，这里只要切换选用
+  if (options.input.variant !== undefined) state.chosenVariant = options.input.variant
 
   const persist = async (): Promise<void> => {
     state.updatedAt = new Date().toISOString()
@@ -106,7 +127,42 @@ export async function runPipeline(options: RunOptions): Promise<RunState> {
     await persist()
   }
 
-  const done = (step: StepId): boolean => existing !== undefined && state.steps.find(item => item.id === step)?.status === 'done'
+  const product = defaultProduct(state.input)
+  const keys = {
+    analysis: hashOf({ source: state.input.source, frames: state.input.frames ?? null }),
+    script: hashOf({
+      source: state.input.source,
+      frames: state.input.frames ?? null,
+      product,
+      maxShotsPerClip: config.maxShotsPerClip,
+      maxSecondsPerClip: config.maxSecondsPerClip,
+      clipSeconds: config.video.secondsPerClip,
+    }),
+    render: hashOf({
+      source: state.input.source,
+      frames: state.input.frames ?? null,
+      product,
+      maxShotsPerClip: config.maxShotsPerClip,
+      maxSecondsPerClip: config.maxSecondsPerClip,
+      clipSeconds: config.video.secondsPerClip,
+      variant: state.chosenVariant,
+      productImage: state.input.productImage ?? null,
+      ratio: config.video.ratio,
+      size: config.image.size,
+      subtitle: config.subtitle,
+    }),
+  }
+  if (previousKeys !== undefined) {
+    const stale = (Object.keys(keys) as Array<keyof typeof keys>).filter(name => previousKeys[name] !== keys[name])
+    if (stale.length > 0) logger.warn('run', `输入有变化（${stale.join('/')}），相关步骤会重新执行`)
+  }
+  state.keys = keys
+
+  const done = (step: StepId): boolean => {
+    if (existing === undefined) return false
+    if (state.steps.find(item => item.id === step)?.status !== 'done') return false
+    return previousKeys?.[KEY_OF[step]] === keys[KEY_OF[step]]
+  }
 
   const step = async <T>(id: StepId, title: string, run: () => Promise<T>, reuse?: () => T | undefined): Promise<T> => {
     if (done(id)) {
@@ -184,6 +240,13 @@ export async function runPipeline(options: RunOptions): Promise<RunState> {
     const variant = pickVariant(variants, state.chosenVariant)
     state.chosenVariant = variant.id
     logger.step('script', `采用 ${variant.id} 版（${variant.angle}），共 ${variant.segments.length} 段`)
+
+    if (options.input.planOnly === true) {
+      await writeJsonAtomic(join(paths.root, 'script.json'), { analysis, variants, chosen: variant.id })
+      await persist()
+      logger.step('script', `--plan：脚本已写入 ${join(paths.root, 'script.json')}，跳过生成`)
+      return state
+    }
 
     const keyframes = await step(
       'keyframes',
