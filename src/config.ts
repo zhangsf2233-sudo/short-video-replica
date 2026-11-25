@@ -50,6 +50,8 @@ export interface Config {
   maxShotsPerClip: number
   /** 单段最长秒数。 */
   maxSecondsPerClip: number
+  /** 同时进行的生成任务数（图片/视频各自最多这么多）。 */
+  concurrency: number
   subtitle: {
     enabled: boolean
     fontName: string
@@ -98,6 +100,7 @@ export function defaultConfig(): Config {
     },
     maxShotsPerClip: 5,
     maxSecondsPerClip: 15,
+    concurrency: 2,
     subtitle: {
       enabled: true,
       fontName: 'PingFang SC',
@@ -160,6 +163,7 @@ export function loadConfig(): Config {
     image,
     video,
     dataDir: env('SVR_DATA_DIR') ?? merged.dataDir,
+    concurrency: Number(env('SVR_CONCURRENCY') ?? merged.concurrency) || merged.concurrency,
     ffmpegPath: env('SVR_FFMPEG') ?? merged.ffmpegPath,
     ffprobePath: env('SVR_FFPROBE') ?? merged.ffprobePath,
     ytDlpPath: env('SVR_YTDLP') ?? merged.ytDlpPath,

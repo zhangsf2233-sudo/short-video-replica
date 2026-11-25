@@ -2,6 +2,7 @@
 
 export { loadConfig, defaultConfig, configPath, maskSecret } from './config.ts'
 export type { Config, ChatConfig, ImageConfig, VideoConfig, EndpointConfig } from './config.ts'
+export { mapPool } from './concurrency.ts'
 export { Logger } from './log.ts'
 export type { LogEntry, LogLevel } from './log.ts'
 export { runPipeline, listRuns, loadRun } from './pipeline/run.ts'

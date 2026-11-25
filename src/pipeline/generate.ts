@@ -2,6 +2,7 @@
 
 import { join } from 'node:path'
 import type { Config } from '../config.ts'
+import { mapPool } from '../concurrency.ts'
 import { ensureDir } from '../files.ts'
 import { generateImage } from '../providers/image.ts'
 import { generateVideo } from '../providers/video.ts'
@@ -21,18 +22,16 @@ export interface KeyframeOptions {
 /** 每段一张参考首帧；产品图作为参考图传给图片模型。 */
 export async function generateKeyframes(options: KeyframeOptions): Promise<Record<string, string>> {
   await ensureDir(options.imagesDir)
-  const output: Record<string, string> = {}
-  for (const segment of options.variant.segments) {
-    const key = String(segment.index)
+  const pairs = await mapPool(options.variant.segments, options.config.concurrency, async segment => {
     const dest = join(options.imagesDir, `seg-${String(segment.index).padStart(2, '0')}.png`)
     options.log(`段 ${segment.index}：生成参考首帧`)
     await generateImage(options.config.image, {
       prompt: buildKeyframePrompt({ segment, product: options.product, style: options.style }),
       ...(options.productImage === undefined ? {} : { referencePath: options.productImage }),
     }, dest)
-    output[key] = dest
-  }
-  return output
+    return [String(segment.index), dest] as const
+  })
+  return Object.fromEntries(pairs)
 }
 
 export interface ClipOptions {
@@ -46,8 +45,7 @@ export interface ClipOptions {
 /** 每段一条视频；首帧图作为 first_frame 参考，保证画面从我们生成的画面开始。 */
 export async function generateClips(options: ClipOptions): Promise<Record<string, string>> {
   await ensureDir(options.clipsDir)
-  const output: Record<string, string> = {}
-  for (const segment of options.variant.segments) {
+  const pairs = await mapPool(options.variant.segments, options.config.concurrency, async segment => {
     const key = String(segment.index)
     const dest = join(options.clipsDir, `seg-${String(segment.index).padStart(2, '0')}.mp4`)
     const firstFrame = options.keyframes[key]
@@ -64,7 +62,7 @@ export async function generateClips(options: ClipOptions): Promise<Record<string
       dest,
       message => options.log(`段 ${segment.index}：${message}`),
     )
-    output[key] = dest
-  }
-  return output
+    return [key, dest] as const
+  })
+  return Object.fromEntries(pairs)
 }

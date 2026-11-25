@@ -128,3 +128,29 @@ test('模型截断（JSON 场景）会放大预算重试', async () => {
     await new Promise(resolve => server.close(resolve))
   }
 })
+
+test('有界并发：保序、限流、失败即停', async () => {
+  const { mapPool } = await import('../dist/concurrency.js')
+  let running = 0
+  let peak = 0
+  const out = await mapPool([1, 2, 3, 4, 5], 2, async n => {
+    running += 1
+    peak = Math.max(peak, running)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    running -= 1
+    return n * 2
+  })
+  assert.deepEqual(out, [2, 4, 6, 8, 10], '结果必须按输入顺序返回')
+  assert.ok(peak <= 2, `并发峰值应不超过上限，实际 ${peak}`)
+
+  let started = 0
+  await assert.rejects(
+    mapPool([1, 2, 3, 4], 2, async n => {
+      started += 1
+      if (n === 2) throw new Error('boom')
+      return n
+    }),
+    /boom/,
+  )
+  assert.ok(started < 4, `失败后不应继续派发，实际启动 ${started} 个`)
+})

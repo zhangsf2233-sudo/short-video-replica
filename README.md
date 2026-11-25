@@ -105,7 +105,12 @@ npx svr run \
 视频模型返回的片段长度经常不等于请求时长（截断、补齐、变帧率都会）。如果字幕还用脚本里的估算，
 第二段开始整体漂移。所以合成阶段先逐段 `ffprobe` 量真值，段内镜头按脚本比例摊开（`pipeline/timeline.ts`）。
 
-**6. 合成阶段先统一规格。**
+**6. 生成阶段有界并发。**
+分镜视频是网络等待型任务，5 段串行等于等 5 次。默认并发 2（`SVR_CONCURRENCY` 可调），
+既压缩等待时间，又不至于把网关打到限流。失败即停：一段挂了不再派发后面的，
+避免继续烧额度（`src/concurrency.ts`，有单测锁住保序与限流）。
+
+**7. 合成阶段先统一规格。**
 不同模型产出的片段分辨率、帧率、像素格式都不一样，concat 分离器要求参数一致。所以先逐段 `scale/pad/setsar/fps` 归一，再无损拼接，最后烧字幕、配轨。
 
 ## 目录
@@ -144,6 +149,7 @@ src/
 | `SVR_IMAGE_BASE` / `SVR_IMAGE_KEY` / `SVR_IMAGE_MODEL` | 图片模型（`/images/generations`） |
 | `SVR_VIDEO_BASE` / `SVR_VIDEO_KEY` / `SVR_VIDEO_MODEL` | 视频模型（Seedance 任务接口） |
 | `SVR_DATA_DIR` | 运行产物目录，默认 `~/.svr/runs` |
+| `SVR_CONCURRENCY` | 同时进行的生成任务数，默认 2（上游限流时调回 1） |
 | `SVR_CONFIG` | 配置文件路径 |
 | `SVR_FFMPEG` / `SVR_FFPROBE` / `SVR_YTDLP` | 二进制路径 |
 
